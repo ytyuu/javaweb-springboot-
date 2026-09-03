@@ -13,6 +13,8 @@ public class JavawebApplication {
 		SpringApplication.run(JavawebApplication.class, args);
 		System.out.println("测试界面:http://localhost:8080/hello");
 		System.out.println("登录界面:http://localhost:8080/login");
+		System.out.println("三国项目界面:http://localhost:8080/threekingdoms");
+		System.out.println("人物关系图界面:http://localhost:8080/relations");
 	}
 
 }

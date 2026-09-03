@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.javaweb.mapper.EdgeMapper">
+
+    <resultMap id="EdgeResultMap" type="com.example.javaweb.entity.Edge">
+        <result property="src" column="source"/>
+        <result property="dst" column="target"/>
+        <result property="weight" column="weight"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="EdgeResultMap">
+        SELECT source, target, weight
+        FROM edges
+        ORDER BY weight DESC
+    </select>
+
+    <select id="findBySrcAndDst" parameterType="map" resultMap="EdgeResultMap">
+        SELECT source, target, weight
+        FROM edges
+        WHERE source = #{src} AND target = #{dst}
+    </select>
+
+    <select id="findByNodesIn" parameterType="list" resultMap="EdgeResultMap">
+        SELECT source, target, weight
+        FROM edges
+        WHERE source IN
+        <foreach collection="nodes" item="node" open="(" separator="," close=")">
+            #{node}
+        </foreach>
+        AND target IN
+        <foreach collection="nodes" item="node" open="(" separator="," close=")">
+            #{node}
+        </foreach>
+    </select>
+</mapper>

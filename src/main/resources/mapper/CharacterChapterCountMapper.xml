@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.javaweb.mapper.CharacterChapterCountMapper">
+
+    <resultMap id="CharacterChapterCountResultMap" type="com.example.javaweb.entity.CharacterChapterCount">
+        <result property="characterName" column="name"/>
+        <result property="appearanceChapters" column="chapter_count"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="CharacterChapterCountResultMap">
+        SELECT name, chapter_count
+        FROM character_chapter_count
+        ORDER BY chapter_count DESC
+    </select>
+
+    <select id="findTopN" parameterType="int" resultMap="CharacterChapterCountResultMap">
+        SELECT name, chapter_count
+        FROM character_chapter_count
+        ORDER BY chapter_count DESC
+        LIMIT #{n}
+    </select>
+</mapper>

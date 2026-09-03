@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.javaweb.mapper.CharacterLifeLineMapper">
+
+    <resultMap id="CharacterLifeLineResultMap" type="com.example.javaweb.entity.CharacterLifeLine">
+        <result column="name" property="name"/>
+        <result column="start" property="start"/>
+        <result column="end" property="end"/>
+        <result column="lifelong" property="lifelong"/>
+    </resultMap>
+
+    <select id="getAllCharacterLifeLines" resultMap="CharacterLifeLineResultMap">
+        SELECT name, start, `end`, lifelong
+        FROM characters
+    </select>
+
+    <select id="getCharacterLifeLineByName" parameterType="java.lang.String" resultMap="CharacterLifeLineResultMap">
+        SELECT name, start, `end`, lifelong
+        FROM characters
+        WHERE name = #{name}
+    </select>
+
+    <select id="getCharacterLifeLinesByNames" parameterType="java.util.List" resultMap="CharacterLifeLineResultMap">
+        SELECT name, start, `end`, lifelong
+        FROM characters
+        WHERE name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+</mapper>

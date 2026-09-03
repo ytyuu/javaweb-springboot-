@@ -1,13 +1,26 @@
 package com.example.javaweb.mapper;
 
 import com.example.javaweb.entity.User;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
 
 @Mapper
-//不用写实现类，MyBatis 会在编译期动态创建代理对象，直接 @Autowired / @Resource 就能用
 public interface UserMapper {
+    @Select("SELECT * FROM users")
+    List<User> findAll();
+
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    User findById(Long id);
+
+    @Insert("INSERT INTO users(username, password, email) VALUES(#{username}, #{password}, #{email})")
+    void insert(User user);
+
+    @Update("UPDATE users SET username=#{username}, password=#{password}, email=#{email} WHERE id=#{id}")
+    void update(User user);
+
+    @Delete("DELETE FROM users WHERE id = #{id}")
+    void deleteById(Long id);
 
     @Select("SELECT id, username, password FROM users " +
             "WHERE username = #{username} AND password = #{password}")

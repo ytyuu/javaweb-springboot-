@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>三国人物关系网络图</title>
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+<style type="text/css">
+#mynetwork { width: 100%; height: 750px; }
+</style>
+</head>
+<body>
+<div id="mynetwork"></div>
+<script type="text/javascript">
+var nodes = [
+  {id: '张辽', label: '张辽', color: {background: '#52558d'}},
+  {id: '夏侯渊', label: '夏侯渊', color: {background: '#52558d'}},
+  {id: '诸葛亮', label: '诸葛亮', color: {background: '#9b6359'}},
+  {id: '夏侯惇', label: '夏侯惇', color: {background: '#52558d'}},
+];
+
+var edges = [
+  {from: '夏侯惇', to: '夏侯渊', value: 16, label: '16'},
+  {from: '夏侯惇', to: '张辽', value: 12, label: '12'},
+  {from: '夏侯渊', to: '张辽', value: 10, label: '10'},
+  {from: '张辽', to: '诸葛亮', value: 7, label: '7'},
+  {from: '夏侯惇', to: '诸葛亮', value: 6, label: '6'},
+  {from: '夏侯渊', to: '诸葛亮', value: 5, label: '5'},
+];
+
+var container = document.getElementById('mynetwork');
+var data = {
+  nodes: new vis.DataSet(nodes),
+  edges: new vis.DataSet(edges)
+};
+var options = {
+  physics: { enabled: false },
+  edges: { smooth: { enabled: true } },
+  nodes: { size: 20, font: { size: 14, color: '#000000' } },
+  interaction: { hover: true }
+};
+var network = new vis.Network(container, data, options);
+</script>
+</body>
+</html>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>三国人物出现统计</title>
+    <!-- 引入ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* 头部样式 */
+        .header {
+            width: 100%;
+            height: 60px;
+            background-color: white;
+            text-align: center;
+            line-height: 60px;
+            font-size: 24px;
+            color: black;
+            border-bottom: 1px solid #ccc;
+        }
+        /* 主体容器 */
+        .container {
+            display: flex;
+            width: 100%;
+            height: calc(100vh - 60px);
+        }
+        /* 左侧按钮区域 */
+        .left-panel {
+            width: 20%;
+            background-color: black;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+        /* 按钮样式 */
+        .btn {
+            padding: 15px;
+            background-color: black;
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn.active {
+            background-color: gray;
+        }
+        /* 中间图表区域 */
+        .middle-panel {
+            width: 50%;
+            background-color: white;
+            padding: 0; /* 移除内边距 */
+            height: 100%;
+            flex: 1; /* 使用flex伸缩性 */
+            display: flex; /* 使用flexbox布局 */
+            flex-direction: column; /* 垂直方向布局 */
+        }
+        /* 图表容器 */
+        #chart-container {
+            width: 100%;
+            height: 100%;
+            flex: 1; /* 占据全部可用空间 */
+        }
+        /* 关系图iframe */
+        #graph-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            flex: 1; /* 占据全部可用空间 */
+        }
+        /* 右侧人物选择区域 */
+        .right-panel {
+            width: 30%;
+            background-color: #f0f0f0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .button-group button {
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .button-group button.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        .selected-buttons {
+            margin-bottom: 15px;
+        }
+        .selected-buttons span {
+            margin-right: 10px;
+        }
+        .relation-form, .character-chart-form {
+            margin-bottom: 15px;
+        }
+        .relation-form button, .character-chart-form button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .relation-form button {
+            background-color: #28a745;
+            color: white;
+        }
+        .character-chart-form button {
+            background-color: #007bff;
+            color: white;
+        }
+        .disabled-btn {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #network-graph {
+            margin-top: 15px;
+            display: none;
+        }
+        #graph-frame {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+        }
+        .info-text {
+            color: white;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+<!-- 头部 -->
+<div class="header">三国人物出现统计</div>
+<!-- 主体容器 -->
+<div class="container">
+    <!-- 左侧按钮区域 -->
+    <div class="left-panel">
+        <button class="btn active" id="btn-character">人物出场章数排行</button>
+        <button class="btn" id="btn-lifeline">人物生命线</button>
+        <button class="btn" id="btn-relation">人物间关系</button>
+        
+        <div class="info-text">
+
+        </div>
+    </div>
+    
+    <!-- 中间图表区域 -->
+    <div class="middle-panel">
+        <div id="chart-container"></div>
+        <!-- 关系图iframe，初始隐藏 -->
+        <iframe id="graph-frame" frameborder="0" style="display:none; overflow: hidden;" scrolling="no"></iframe>
+    </div>
+    
+    <!-- 右侧人物选择区域 -->
+    <div class="right-panel">
+        <h3>人物选择</h3>
+        <div class="button-group">
+            <button data-name="刘备">刘备</button>
+            <button data-name="关羽">关羽</button>
+            <button data-name="张飞">张飞</button>
+            <button data-name="诸葛亮">诸葛亮</button>
+            <button data-name="赵云">赵云</button>
+            <button data-name="曹操">曹操</button>
+            <button data-name="司马懿">司马懿</button>
+            <button data-name="张辽">张辽</button>
+            <button data-name="夏侯渊">夏侯渊</button>
+            <button data-name="夏侯惇">夏侯惇</button>
+            <button data-name="孙策">孙策</button>
+            <button data-name="孙权">孙权</button>
+            <button data-name="周瑜">周瑜</button>
+            <button data-name="袁术">袁术</button>
+            <button data-name="吕布">吕布</button>
+            <button data-name="董卓">董卓</button>
+        </div>
+        <div class="selected-buttons">
+            <strong>已选择：</strong>
+            <span id="selected-buttons">(未选择)</span>
+        </div>
+        <form id="character-chart-form" class="character-chart-form">
+            <button type="submit">生成人物出场章数排行</button>
+        </form>
+        <form id="lifeline-form" class="character-chart-form">
+            <button type="submit">显示生命线</button>
+        </form>
+        <form id="submit-form" class="relation-form">
+            <button type="submit">生成网络图</button>
+        </form>
+        <div id="status"></div>
+    </div>
+</div>
+
+<script>
+    // 初始化ECharts实例（全局变量）
+    var myChart = null;
+    // 获取图表容器元素
+    var chartContainer = document.getElementById('chart-container');
+    var graphFrame = document.getElementById('graph-frame');
+
+    // 初始化图表实例的方法（核心修复：每次切换前销毁旧实例）
+    function initChart() {
+        // 如果已有实例，先销毁，避免重叠
+        if (myChart !== null) {
+            myChart.dispose();
+        }
+        // 创建新的ECharts实例
+        myChart = echarts.init(chartContainer);
+        // 确保关系图iframe隐藏
+        graphFrame.style.display = 'none';
+    }
+
+    // 按钮点击事件
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 移除所有按钮的active样式
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            // 给当前点击的按钮添加active样式
+            this.classList.add('active');
+            // 根据按钮显示对应图表
+            if (this.id === 'btn-character') {
+                loadCharacterChart();
+            } else if (this.id === 'btn-force') {
+                loadForceChart();
+            } else if (this.id === 'btn-lifeline') {
+                // 显示生命线图的提示
+                initChart();
+                var option = {
+                    title: { text: '人物生命线' },
+                    tooltip: { trigger: 'item' },
+                    textStyle: {
+                        fontSize: 20,
+                        color: 'black'
+                    },
+                    graphic: [{
+                        type: 'text',
+                        left: 'center',
+                        top: 'center',
+                        style: {
+                            text: '请在右侧选择人物并点击"显示生命线"按钮',
+                            fontSize: 24,
+                            fill: '#666'
+                        }
+                    }]
+                };
+                myChart.setOption(option);
+                document.getElementById('graph-frame').style.display = 'none';
+                document.getElementById('chart-container').style.display = 'block';
+            } else if (this.id === 'btn-relation') {
+                // 显示提示信息，让用户在右侧选择人物
+                initChart();
+                var option = {
+                    title: { text: '人物间关系' },
+                    tooltip: { trigger: 'item' },
+                    textStyle: {
+                        fontSize: 20,
+                        color: 'black'
+                    },
+                    graphic: [{
+                        type: 'text',
+                        left: 'center',
+                        top: 'center',
+                        style: {
+                            text: '请在右侧选择人物并生成关系图',
+                            fontSize: 24,
+                            fill: '#666'
+                        }
+                    }]
+                };
+                myChart.setOption(option);
+                // 确保隐藏关系图iframe
+                graphFrame.style.display = 'none';
+                chartContainer.style.display = 'block';
+            }
+        });
+    });
+
+    // 加载人物出场排行柱状图 - 根据选择的人物
+    function loadCharacterChart() {
+        // 每次加载前重新初始化图表
+        initChart();
+        
+        // 获取已选择的人物
+        const selectedButtonsDisplay = document.getElementById('selected-buttons');
+        let selectedNames = selectedButtonsDisplay.textContent.trim();
+        
+        if (selectedNames === '(未选择)' || selectedNames === '') {
+            // 如果没有选择任何人，则显示提示
+            var option = {
+                title: { 
+                    text: '人物出场章数排行',
+                    left: 'center',
+                    textStyle: {
+                        fontSize: 18
+                    }
+                },
+                graphic: [{
+                    type: 'text',
+                    left: 'center',
+                    top: 'center',
+                    style: {
+                        text: '请在右侧选择人物并点击"生成人物出场章数排行"按钮',
+                        fontSize: 24,
+                        fill: '#666'
+                    }
+                }]
+            };
+            myChart.setOption(option);
+            return;
+        }
+        
+        // 从显示文本中提取人名（去除'(未选择)'标记）
+        let namesArray = selectedNames.split(', ');
+        
+        // 从后端获取选择人物的数据
+        const params = new URLSearchParams();
+        namesArray.forEach(name => params.append('names', name));
+        
+        fetch(`/character/data?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                // 按出场章数从高到低排序
+                var sortedData = data.sort((a, b) => b.appearanceChapters - a.appearanceChapters);
+                var names = sortedData.map(item => item.characterName);
+                var chapters = sortedData.map(item => item.appearanceChapters);
+                
+                // 配置图表
+                var option = {
+                    title: { 
+                        text: '人物出场章数排行',
+                        left: 'center',
+                        textStyle: {
+                            fontSize: 18
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: names,
+                        axisLabel: {
+                            interval: 0,  // 显示所有x轴标签
+                            rotate: 0,    // 标签旋转角度
+                            fontSize: 12  // 字体大小
+                        },
+                        position: 'bottom'  // x轴在底部
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: 0,
+                        max: 70,
+                        name: '出场章数',
+                        nameLocation: 'middle',
+                        nameGap: 40,
+                        axisLabel: {
+                            fontSize: 12
+                        }
+                    },
+                    series: [{
+                        name: '出场章数',
+                        data: chapters,
+                        type: 'bar',
+                        itemStyle: {
+                            color: 'red'  // 柱子颜色为红色
+                        },
+                        label: {
+                            show: true,  // 显示数值标签
+                            position: 'top',  // 标签位置在顶部
+                            fontSize: 12
+                        }
+                    }]
+                };
+                // 设置并渲染图表
+                myChart.setOption(option);
+            })
+            .catch(error => console.error('获取人物数据失败:', error));
+    }
+
+    // 加载人物生命线图
+    function loadLifeLineChart() {
+        // 每次加载前重新初始化图表
+        initChart();
+        
+        // 获取已选择的人物
+        const selectedButtonsDisplay = document.getElementById('selected-buttons');
+        let selectedNames = selectedButtonsDisplay.textContent.trim();
+        
+        if (selectedNames === '(未选择)' || selectedNames === '') {
+            // 如果没有选择任何人，则显示提示
+            var option = {
+                title: { 
+                    text: '人物生命线',
+                    left: 'center',
+                    textStyle: {
+                        fontSize: 18
+                    }
+                },
+                graphic: [{
+                    type: 'text',
+                    left: 'center',
+                    top: 'center',
+                    style: {
+                        text: '请在右侧选择人物并点击"显示生命线"按钮',
+                        fontSize: 24,
+                        fill: '#666'
+                    }
+                }]
+            };
+            myChart.setOption(option);
+            return;
+        }
+        
+        // 从显示文本中提取人名（去除'(未选择)'标记）
+        let namesArray = selectedNames.split(', ');
+        
+        // 从后端获取选择人物的生命线数据
+        const params = new URLSearchParams();
+        namesArray.forEach(name => params.append('names', name));
+        
+        fetch(`/lifeline/data?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                var names = data.map(item => item.name);
+                var starts = data.map(item => item.start);
+                var ends = data.map(item => item.end);
+                var lifes = data.map(item => item.lifelong);
+                
+                // 准备数据，将每个时间段转换为适合ECharts处理的格式
+                var seriesData = data.map(function(item, index) {
+                    // 返回 [类别索引, 开始时间, 结束时间, 人物名] 格式的数据
+                    return [index, item.start, item.end, item.name];
+                });
+                
+                // 配置甘特图
+                var option = {
+                    title: { 
+                        text: '人物生命线',
+                        left: 'center',
+                        textStyle: {
+                            fontSize: 18
+                        }
+                    },
+                    tooltip: {
+                        formatter: function(params) {
+                            var name = params.data[3];
+                            var start = params.data[1];
+                            var end = params.data[2];
+                            var lifeLength = end - start;
+                            return name + '<br/>' +
+                                   '首次出场: ' + start + '<br/>' +
+                                   '末次出场: ' + end + '<br/>' +
+                                   '生命长度: ' + lifeLength;
+                        }
+                    },
+                    grid: {
+                        left: '15%',
+                        right: '10%',
+                        bottom: '15%',
+                        top: '10%'
+                    },
+                    xAxis: {
+                        type: 'value',
+                        name: '章节',
+                        min: 0,
+                        max: 120
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: names,
+                        inverse: true // 反转顺序，使第一个在上方
+                    },
+                    series: [{
+                        type: 'custom',
+                        renderItem: function(params, api) {
+                            // 获取当前数据项的值
+                            var start = api.value(1); // 开始时间
+                            var end = api.value(2);   // 结束时间
+                            var yValue = api.value(0); // y轴类别索引
+                            
+                            // 将数据值转换为像素坐标
+                            var startPoint = api.coord([start, yValue]);
+                            var endPoint = api.coord([end, yValue]);
+                            
+                            // 计算矩形尺寸
+                            var height = api.size([0, 1])[1]; // 获取一个单位高度
+                            var width = endPoint[0] - startPoint[0];
+                            
+                            // 调整y坐标使其居中
+                            var y = startPoint[1] - height / 2;
+                            
+                            // 创建矩形元素
+                            return {
+                                type: 'rect',
+                                shape: {
+                                    x: startPoint[0],
+                                    y: y,
+                                    width: width,
+                                    height: height
+                                },
+                                style: api.style({
+                                    fill: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
+                                        offset: 0,
+                                        color: '#83bff6'
+                                    }, {
+                                        offset: 1,
+                                        color: '#188df0'
+                                    }])
+                                })
+                            };
+                        },
+                        encode: {
+                            x: [1, 2], // 映射开始和结束时间到x轴
+                            y: 0,      // 映射类别索引到y轴
+                            tooltip: [3, 1, 2] // 映射人物名、开始时间、结束时间到提示框
+                        },
+                        data: seriesData
+                    }]
+                };
+                
+                // 设置并渲染图表
+                myChart.setOption(option);
+            })
+            .catch(error => console.error('获取人物生命线数据失败:', error));
+    }
+
+    // 页面加载时默认显示人物出场排行
+    window.onload = function() {
+        initChart(); // 初始化第一个图表实例
+        loadCharacterChart();
+    };
+
+    // 自适应窗口大小（同步更新实例）
+    window.addEventListener('resize', function() {
+        if (myChart !== null) {
+            myChart.resize();
+        }
+    });
+    
+    // 人物选择功能
+    // 获取按钮组和已选择显示区域
+    const buttonGroup = document.querySelector('.button-group');
+    const selectedButtonsDisplay = document.getElementById('selected-buttons');
+    const submitForm = document.getElementById('submit-form');
+    const characterChartForm = document.getElementById('character-chart-form');
+    const statusDiv = document.getElementById('status');
+
+    // 存储已选择的按钮名称
+    let selectedButtons = [];
+
+    // 添加按钮点击事件
+    buttonGroup.addEventListener('click', (event) => {
+        const button = event.target;
+        if (button.tagName === 'BUTTON') {
+            const name = button.getAttribute('data-name');
+            if (selectedButtons.includes(name)) {
+                // 如果已选择，移除
+                selectedButtons = selectedButtons.filter(btn => btn !== name);
+                button.classList.remove('selected');
+            } else {
+                // 如果未选择，添加
+                selectedButtons.push(name);
+                button.classList.add('selected');
+            }
+            // 更新已选择显示区域
+            selectedButtonsDisplay.textContent = selectedButtons.length > 0 ? selectedButtons.join(', ') : '(未选择)';
+            
+            // 如果当前显示的是人物出场排行，更新图表
+            if (document.querySelector('.btn.active').id === 'btn-character') {
+                loadCharacterChart();
+            }
+        }
+    });
+
+    // 添加表单提交事件 - 生成人物出场章数排行
+    characterChartForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        // 检查当前左侧按钮是否为"人物出场章数排行"
+        if (document.querySelector('.btn.active').id !== 'btn-character') {
+            statusDiv.textContent = '请先选择左侧的"人物出场章数排行"选项';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        if (selectedButtons.length === 0) {
+            statusDiv.textContent = '请至少选择一个人物';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        // 清除错误信息
+        statusDiv.textContent = '';
+        statusDiv.className = '';
+
+        // 重新加载人物出场排行图
+        loadCharacterChart();
+    });
+
+    // 添加表单提交事件 - 生成网络图
+    submitForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        // 检查当前左侧按钮是否为"人物间关系"
+        if (document.querySelector('.btn.active').id !== 'btn-relation') {
+            statusDiv.textContent = '请先选择左侧的"人物间关系"选项';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        if (selectedButtons.length === 0) {
+            statusDiv.textContent = '请至少选择一个人物';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        // 创建表单数据对象
+        const formData = new FormData();
+        formData.append('selectedButtons', selectedButtons.join(','));
+
+        // 显示加载状态
+        statusDiv.textContent = '正在生成网络图...';
+        statusDiv.className = '';
+        
+        // 发送POST请求
+        fetch('/submit', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                statusDiv.innerHTML = data.message;
+                statusDiv.className = 'success';
+                
+                // 隐藏ECharts图表，显示关系图iframe
+                if (myChart !== null) {
+                    myChart.dispose(); // 销毁当前图表实例
+                    myChart = null;
+                }
+                chartContainer.style.display = 'none';
+                graphFrame.style.display = 'block';
+                graphFrame.src = '/三國共現網絡.html?' + new Date().getTime(); // 添加时间戳防止缓存
+                
+                // 同时更新左侧按钮状态，确保"人物间关系"按钮保持激活
+                document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('btn-relation').classList.add('active');
+            } else {
+                statusDiv.textContent = data.error || '生成失败';
+                statusDiv.className = 'error';
+            }
+        })
+        .catch(error => {
+            console.error('提交失败：', error);
+            statusDiv.textContent = '提交失败，请重试';
+            statusDiv.className = 'error';
+        });
+    });
+    
+    // 添加生命线表单提交事件
+    const lifelineForm = document.getElementById('lifeline-form');
+    lifelineForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        // 检查当前左侧按钮是否为"人物生命线"
+        if (document.querySelector('.btn.active').id !== 'btn-lifeline') {
+            statusDiv.textContent = '请先选择左侧的"人物生命线"选项';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        if (selectedButtons.length === 0) {
+            statusDiv.textContent = '请至少选择一个人物';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        // 清除错误信息
+        statusDiv.textContent = '';
+        statusDiv.className = '';
+
+        // 重新加载人物生命线图
+        loadLifeLineChart();
+    });
+</script>
+</body>
+</html>
