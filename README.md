@@ -1,6 +1,6 @@
-# JavaWeb - 三国人物关系可视化分析系统
+# 书籍人物关系可视化（javaweb-springboot）
 
-基于 Spring Boot 的三国人物共现关系网络可视化 Web 应用。
+基于 Spring Boot 的书籍人物共现关系网络可视化 Web 应用。
 
 ## 技术栈
 

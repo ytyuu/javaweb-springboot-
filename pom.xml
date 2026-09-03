@@ -11,8 +11,8 @@
 	<groupId>com.example</groupId>
 	<artifactId>javaweb</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>javaweb</name>
-	<description>Demo project for Spring Boot</description>
+	<name>书籍人物关系可视化（javaweb-springboot）</name>
+	<description>书籍人物关系可视化（javaweb-springboot）</description>
 	<url/>
 	<licenses>
 		<license/>
